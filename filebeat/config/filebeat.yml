@@ -40,14 +40,14 @@ filebeat.inputs:
 processors:
   - add_cloud_metadata: ~
 
-monitoring:
-  enabled: true
-  elasticsearch:
-    username: beats_system
-    password: ${BEATS_SYSTEM_PASSWORD}
+# monitoring:
+#   enabled: true
+#   elasticsearch:
+#     username: beats_system
+#     password: ${BEATS_SYSTEM_PASSWORD}
 
-output.elasticsearch:
-  hosts: ["logstash:5044"]
+output.logstash:
+  hosts: [ logstash:5044 ]
   # username: filebeat_internal
   # password: ${FILEBEAT_INTERNAL_PASSWORD}
   ssl:
