@@ -1,97 +1,54 @@
-# Elastic stack (ELK) on Docker
 
-[![Elastic Stack version](https://img.shields.io/badge/Elastic%20Stack-8.15.3-00bfb3?style=flat&logo=elastic-stack)](https://www.elastic.co/blog/category/releases)
-[![Build Status](https://github.com/deviantony/docker-elk/workflows/CI/badge.svg?branch=tls)](https://github.com/deviantony/docker-elk/actions?query=workflow%3ACI+branch%3Atls)
-[![Join the chat](https://badges.gitter.im/Join%20Chat.svg)](https://app.gitter.im/#/room/#deviantony_docker-elk:gitter.im)
+# ELK with filebeat on Docker
 
-Run the latest version of the [Elastic stack][elk-stack] with Docker and Docker Compose.
+## Step 1 -- Clone the repository
 
-It gives you the ability to analyze any data set by using the searching/aggregation capabilities of Elasticsearch and
-the visualization power of Kibana.
+    $ git clone --branch tls https://github.com/TalhaJuikar/ELK-docker.git
+    $ cd docker-elk
 
-Based on the [official Docker images][elastic-docker] from Elastic:
+## Step 2 -- Set the passwords for the users in the .env file
+The default username and password ***'elastic' and 'changeme'***
+Filebeat requires these users be enabled with passwords ***filebeat_internal and beats_system***
 
-* [Elasticsearch](https://github.com/elastic/elasticsearch/tree/main/distribution/docker)
-* [Logstash](https://github.com/elastic/logstash/tree/main/docker)
-* [Kibana](https://github.com/elastic/kibana/tree/main/src/dev/build/tasks/os_packages/docker_generator)
+    $ vi .env
 
-Other available stack variants:
+## Step 3 -- Edit the configuration files of elasticsearch, Kibana, Logstash and Filebeat as required.
 
-* [`default`](https://github.com/deviantony/docker-elk/tree/main): default setup without TLS encryption
-* [`searchguard`](https://github.com/deviantony/docker-elk/tree/searchguard): Search Guard support
+**Directory tree**
+ 
+    .
+    ├── elasticsearch
+    │   └── config
+    │       └── elasticsearch.yml
+    ├── kibana
+    │   └── config
+    │       └── kibana.yml
+    ├── filebeat
+    │   ├── config
+    │       └── filebeat.yml
+    └── logstash
+        ├── config
+        │   └── logstash.yml
+        └── pipeline
+            └── logstash.conf
 
-> [!IMPORTANT]
-> [Platinum][subscriptions] features are enabled by default for a [trial][license-mngmt] duration of **30 days**. After
-> this evaluation period, you will retain access to all the free features included in the Open Basic license seamlessly,
-> without manual intervention required, and without losing any data. Refer to the [How to disable paid
-> features](#how-to-disable-paid-features) section to opt out of this behaviour.
+**
 
----
+## Step 4 -- Generate the ssl certificates.
 
-## tl;dr
+    $ docker compose up tls
 
-```sh
-docker compose up tls
-```
+## Step 5 -- Initialize and setup the elasticserach users and groups
 
-```sh
-docker compose up setup
-```
+    $ docker compose up setup
 
-```sh
-docker compose up
-```
+## Step 6 -- Run the stack
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://github.com/user-attachments/assets/6f67cbc0-ddee-44bf-8f4d-7fd2d70f5217">
-  <img alt="Animated demo" src="https://github.com/user-attachments/assets/501a340a-e6df-4934-90a2-6152b462c14a">
-</picture>
+    $ docker compose up -d
 
----
 
-## Philosophy
 
-We aim at providing the simplest possible entry into the Elastic stack for anybody who feels like experimenting with
-this powerful combo of technologies. This project's default configuration is purposely minimal and unopinionated. It
-does not rely on any external dependency, and uses as little custom automation as necessary to get things up and
-running.
 
-Instead, we believe in good documentation so that you can use this repository as a template, tweak it, and make it _your
-own_. [sherifabdlnaby/elastdocker][elastdocker] is one example among others of project that builds upon this idea.
-
----
-
-## Contents
-
-1. [Requirements](#requirements)
-   * [Host setup](#host-setup)
-   * [Docker Desktop](#docker-desktop)
-     * [Windows](#windows)
-     * [macOS](#macos)
-1. [Usage](#usage)
-   * [Bringing up the stack](#bringing-up-the-stack)
-   * [Initial setup](#initial-setup)
-     * [Setting up user authentication](#setting-up-user-authentication)
-     * [Injecting data](#injecting-data)
-   * [Cleanup](#cleanup)
-   * [Version selection](#version-selection)
-1. [Configuration](#configuration)
-   * [How to configure Elasticsearch](#how-to-configure-elasticsearch)
-   * [How to configure Kibana](#how-to-configure-kibana)
-   * [How to configure Logstash](#how-to-configure-logstash)
-   * [How to disable paid features](#how-to-disable-paid-features)
-   * [How to scale out the Elasticsearch cluster](#how-to-scale-out-the-elasticsearch-cluster)
-   * [How to re-generate TLS certificates](#how-to-re-generate-tls-certificates)
-   * [How to re-execute the setup](#how-to-re-execute-the-setup)
-   * [How to reset a password programmatically](#how-to-reset-a-password-programmatically)
-1. [Extensibility](#extensibility)
-   * [How to add plugins](#how-to-add-plugins)
-   * [How to enable the provided extensions](#how-to-enable-the-provided-extensions)
-1. [JVM tuning](#jvm-tuning)
-   * [How to specify the amount of memory used by a service](#how-to-specify-the-amount-of-memory-used-by-a-service)
-   * [How to enable a remote JMX connection to a service](#how-to-enable-a-remote-jmx-connection-to-a-service)
-1. [Going further](#going-further)
-   * [Plugins and integrations](#plugins-and-integrations)
 
 ## Requirements
 
@@ -99,7 +56,6 @@ own_. [sherifabdlnaby/elastdocker][elastdocker] is one example among others of p
 
 * [Docker Engine][docker-install] version **18.06.0** or newer
 * [Docker Compose][compose-install] version **2.0.0** or newer
-* 1.5 GB of RAM
 
 > [!NOTE]
 > Especially on Linux, make sure your user has the [required permissions][linux-postinstall] to interact with the Docker
@@ -114,71 +70,7 @@ By default, the stack exposes the following ports:
 * 9300: Elasticsearch TCP transport
 * 5601: Kibana
 
-> [!WARNING]
-> Elasticsearch's [bootstrap checks][bootstrap-checks] were purposely disabled to facilitate the setup of the Elastic
-> stack in development environments. For production setups, we recommend users to set up their host according to the
-> instructions from the Elasticsearch documentation: [Important System Configuration][es-sys-config].
-
-### Docker Desktop
-
-#### Windows
-
-If you are using the legacy Hyper-V mode of _Docker Desktop for Windows_, ensure [File Sharing][win-filesharing] is
-enabled for the `C:` drive.
-
-#### macOS
-
-The default configuration of _Docker Desktop for Mac_ allows mounting files from `/Users/`, `/Volume/`, `/private/`,
-`/tmp` and `/var/folders` exclusively. Make sure the repository is cloned in one of those locations or follow the
-instructions from the [documentation][mac-filesharing] to add more locations.
-
-## Usage
-
-> [!WARNING]
-> You must rebuild the stack images with `docker compose build` whenever you switch branch or update the
-> [version](#version-selection) of an already existing stack.
-
-### Bringing up the stack
-
-Clone this repository onto the Docker host that will run the stack with the command below:
-
-```sh
-git clone --branch tls https://github.com/deviantony/docker-elk.git
-```
-
-Then, generate X.509 certificates and private keys to enable secure communications over TLS between components:
-
-```sh
-docker compose up tls
-```
-
-> [!NOTE]
-> All Elastic components — including [extensions](#how-to-enable-the-provided-extensions) — are pre-configured to use
-> the certificates generated by this command. To change the DNS names and IP addresses to include in the certificates,
-> or re-generate them at a later time, refer to [How to re-generate TLS
-> certificates](#how-to-re-generate-tls-certificates).
-
-After TLS certificates have been generated, initialize the Elasticsearch users and groups required by docker-elk by
-executing the command:
-
-```sh
-docker compose up setup
-```
-
-If everything went well and the setup completed without error, start the other stack components:
-
-```sh
-docker compose up
-```
-
-> [!NOTE]
-> You can also run all services in the background (detached mode) by appending the `-d` flag to the above command.
-
-Give Kibana about a minute to initialize, then access the Kibana web UI by opening <http://localhost:5601> in a web
-browser and use the following (default) credentials to log in:
-
-* user: *elastic*
-* password: *changeme*
+---
 
 > [!NOTE]
 > Upon the initial startup, the `elastic`, `logstash_internal` and `kibana_system` Elasticsearch users are intialized
